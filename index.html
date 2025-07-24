@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "ভূ-পৃষ্ঠের যে স্থানে ভূচৌম্বক প্রাবল্যের অনুভূমিক ও উলম্ব উপাংশ সমান সেখানে-",
+          options: {
+            a: "বিনতি কোণ 0°",
+            b: "বিনতি কোণ 90°",
+            c: "বিনতি কোণ 45°",
+            d: "বিনতি কোণ 60°",
+          },
+          correct: "c",
+          explanation:
+            "<p>ভূচৌম্বক প্রাবল্যের অনুভূমিক উপাংশ (H) এবং উলম্ব উপাংশ (V) এর মধ্যে সম্পর্ক হলো V = H tanδ, যেখানে δ হলো বিনতি কোণ। যখন অনুভূমিক ও উলম্ব উপাংশ সমান হয় (V = H), তখন tanδ = 1 হয়। অর্থাৎ, δ = tan<sup>-1</sup>(1) = 45°। এই বিনতি কোণ 45° নির্দেশ করে যে, চৌম্বক ক্ষেত্ররেখাগুলো ভূপৃষ্ঠের সাথে 45° কোণে আপতিত হচ্ছে।</p>",
+        },
+        {
+          id: 2,
+          question: "দুইটি সমান্তরাল তার দিয়ে একই দিকে বিদ্যুৎ প্রবাহিত হলে-",
+          options: {
+            a: "প্রবাহের মধ্যে কোন বল কাজ করে না",
+            b: "একে অপরকে বিকর্ষণ করে",
+            c: "একে অপরকে আকর্ষণ করে",
+            d: "পরস্পরের বিপরীতমুখী হয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>যখন দুইটি সমান্তরাল তার দিয়ে একই দিকে তড়িৎ প্রবাহিত হয়, তখন একটি তারের তড়িৎ প্রবাহ অন্য তারের চারপাশে একটি চৌম্বক ক্ষেত্র তৈরি করে। এই চৌম্বক ক্ষেত্রের কারণে অন্য তারের উপর একটি বল ক্রিয়া করে। ফ্লেমিংয়ের বাম হস্ত নিয়ম প্রয়োগ করে দেখা যায় যে, এই বলের প্রকৃতি আকর্ষণমূলক হয়। ফলে তার দুটি একে অপরকে আকর্ষণ করে।</p>",
+        },
+        {
+          id: 3,
+          question: "তড়িৎবাহী তার কুন্ডলীতে শক্তি সঞ্চিত থাকে-",
+          options: {
+            a: "তড়িৎ ক্ষেত্রে",
+            b: "চৌম্বক ক্ষেত্রে",
+            c: "তাপশক্তি হিসেবে",
+            d: "যান্ত্রিক শক্তি হিসেবে",
+          },
+          correct: "b",
+          explanation:
+            "<p>একটি তড়িৎবাহী তার কুণ্ডলীতে (বা আবেশক) তড়িৎ প্রবাহের ফলে এর চারপাশে একটি চৌম্বক ক্ষেত্র তৈরি হয়। এই চৌম্বক ক্ষেত্রের মধ্যেই শক্তি সঞ্চিত থাকে। কুণ্ডলীতে সঞ্চিত শক্তির পরিমাণ W = 0.5LI² দ্বারা প্রকাশ করা হয়, যেখানে L হলো কুণ্ডলীর স্বাবেশাঙ্ক এবং I হলো তড়িৎ প্রবাহ। এই শক্তিকে চৌম্বক শক্তি বলা হয়।</p>",
+        },
+        {
+          id: 4,
+          question:
+            "তড়িৎবাহী একটি লম্বা তারের a লম্ব দূরত্বে কোনো বিন্দুতে চৌম্বক ক্ষেত্রের মান কত?",
+          options: {
+            a: "B = μ₀I / 2πa",
+            b: "B = μ₀I / 2a",
+            c: "B = μ₀I / πa",
+            d: "B = μ₀I / 2π",
+          },
+          correct: "a",
+          explanation:
+            "<p>একটি অসীম দৈর্ঘ্যের সরল তড়িৎবাহী তার থেকে a লম্ব দূরত্বে কোনো বিন্দুতে সৃষ্ট চৌম্বক ক্ষেত্রের মান নির্ণয়ের সূত্র হলো B = μ₀I / 2πa। এখানে μ₀ হলো শূন্য স্থানের চৌম্বক প্রবেশ্যতা এবং I হলো তারের মধ্য দিয়ে প্রবাহিত তড়িৎ প্রবাহ। এটি অ্যাম্পিয়ারের সূত্রের একটি গুরুত্বপূর্ণ প্রয়োগ।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "দুটি তড়িৎবাহী তারে I₁ এবং I₂ প্রবাহ বিপরীত দিকে প্রবাহিত হচ্ছে এরা-",
+          options: {
+            a: "কোনো বল অনুভব করে না",
+            b: "পরস্পর আকর্ষণ অনুভব করবে",
+            c: "পরস্পর বিকর্ষণ অনুভব করবে",
+            d: "কোনোটিই নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>যখন দুটি সমান্তরাল তারের মধ্য দিয়ে বিপরীত দিকে তড়িৎ প্রবাহিত হয়, তখন একটি তারের তড়িৎ প্রবাহ অন্য তারের চারপাশে একটি চৌম্বক ক্ষেত্র তৈরি করে। ফ্লেমিংয়ের বাম হস্ত নিয়ম প্রয়োগ করে দেখা যায় যে, এই চৌম্বক ক্ষেত্রের কারণে তার দুটির উপর বিকর্ষণ বল ক্রিয়া করে। ফলে তার দুটি একে অপরকে বিকর্ষণ করে দূরে সরে যায়।</p>",
+        },
+        {
+          id: 6,
+          question: "লরেঞ্জ বল হচ্ছে-",
+          options: {
+            a: "qE",
+            b: "q(v × B)",
+            c: "q(E + v × B)",
+            d: "q(E × v × B)",
+          },
+          correct: "c",
+          explanation:
+            "<p>লরেঞ্জ বল (Lorentz force) হলো একটি চার্জিত কণার উপর ক্রিয়াশীল মোট বল, যখন কণাটি একই সাথে তড়িৎ ক্ষেত্র (E) এবং চৌম্বক ক্ষেত্র (B) উভয় স্থানেই বিদ্যমান থাকে। এর গাণিতিক রূপ হলো F = q(E + v × B), যেখানে q হলো চার্জের পরিমাণ এবং v হলো চার্জের বেগ। এটি তড়িৎচুম্বকত্বের একটি মৌলিক ধারণা।</p>",
+        },
+        {
+          id: 7,
+          question:
+            "চৌম্বক ক্ষেত্র B-তে v বেগে গতিশীল একটি আধান q-এর উপর ক্রিয়াশীল বল F হলে-",
+          options: {
+            a: "F = q(v × B)",
+            b: "F = q(v.B)",
+            c: "F = q(B)",
+            d: "F = v(q.B)",
+          },
+          correct: "a",
+          explanation:
+            "<p>চৌম্বক ক্ষেত্র B-তে v বেগে গতিশীল একটি আধান q-এর উপর ক্রিয়াশীল চৌম্বক বলের মান নির্ণয়ের সূত্র হলো F = q(v × B)। এটি ভেক্টর গুণন (cross product) দ্বারা প্রকাশ করা হয়, যা নির্দেশ করে যে বলের দিক বেগ (v) এবং চৌম্বক ক্ষেত্র (B) উভয়েরই লম্ব দিকে। এই বল লরেন্ত্জ বলের একটি অংশ।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "চৌম্বক দিকের সাথে কত কোণে একটি চার্জিত কণা গতিশীল হলে সর্বোচ্চ বল অনুভব করবে?",
+          options: {
+            a: "0°",
+            b: "45°",
+            c: "90°",
+            d: "180°",
+          },
+          correct: "c",
+          explanation:
+            "<p>একটি চার্জিত কণার উপর ক্রিয়াশীল চৌম্বক বল F = qvB sinθ, যেখানে θ হলো কণার বেগ (v) এবং চৌম্বক ক্ষেত্রের (B) দিকের মধ্যবর্তী কোণ। বলের মান সর্বোচ্চ হবে যখন sinθ এর মান সর্বোচ্চ হয়, অর্থাৎ sinθ = 1। এটি তখনই সম্ভব যখন θ = 90° হয়। তাই, কণাটি চৌম্বক ক্ষেত্রের দিকের সাথে সমকোণে গতিশীল হলে সর্বোচ্চ বল অনুভব করবে।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "B মানের একটি সুষম চৌম্বক ক্ষেত্রের বলরেখার সমান্তরালে অপরিবর্তনীয় বেগ v-তে চলমান একটি চার্জ - এর উপর ক্রিয়াশীল বল হলো-",
+          options: {
+            a: "Bev",
+            b: "0",
+            c: "e / B",
+            d: "e / Bv",
+          },
+          correct: "b",
+          explanation:
+            "<p>একটি চার্জিত কণার উপর চৌম্বক বলের সূত্র হলো F = qvB sinθ। যখন একটি চার্জ চৌম্বক ক্ষেত্রের বলরেখার সমান্তরালে গতিশীল হয়, তখন বেগ (v) এবং চৌম্বক ক্ষেত্র (B) এর মধ্যবর্তী কোণ θ হয় 0° বা 180°। উভয় ক্ষেত্রেই sinθ = 0 হয়। সুতরাং, F = qvB sin(0°) = 0 বা F = qvB sin(180°) = 0। তাই, চার্জের উপর ক্রিয়াশীল বল শূন্য হবে।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "একই বেগে চলমান একটি ইলেকট্রন এবং একটি প্রোটনকে একটি অভিন্ন চৌম্বকক্ষেত্রের দিকের সাথে 90° কোণে প্রেরণ করা হলো। তাদের উপর প্রযুক্ত প্রারম্ভিক চৌম্বকীয় বল হবে-",
+          options: {
+            a: "সমান এবং একই দিকে",
+            b: "সমান এবং বিপরীত দিকে",
+            c: "সমান এবং পারস্পরিক লম্বভাবে",
+            d: "ভিন্ন এবং বিপরীত দিকে",
+          },
+          correct: "b",
+          explanation:
+            "<p>চৌম্বক বলের সূত্র F = qvB sinθ। এখানে ইলেকট্রন ও প্রোটনের চার্জের মান সমান (e), বেগ (v) এবং চৌম্বক ক্ষেত্রের (B) মান অভিন্ন, এবং কোণ (θ) 90° হওয়ায় sinθ = 1। তাই বলের মান সমান হবে (F = evB)। তবে, ইলেকট্রনের চার্জ ঋণাত্মক এবং প্রোটনের চার্জ ধনাত্মক হওয়ায়, লরেন্ত্জ বলের দিক v × B এর উপর নির্ভর করে বিপরীত হবে।</p>",
+        },
+        {
+          id: 11,
+          question:
+            "0.5T সুষম চৌম্বক ক্ষেত্রের সাথে 60° কোণে একটি ইলেকট্রন 10 m/s বেগে চলমান হলে ইলেকট্রনের উপর ক্রিয়াশীল বলের মান নির্ণয়ের সমীকরণ-",
+          options: {
+            a: "qvB sin θ",
+            b: "μ₀qvB sin θ",
+            c: "E₀qvB sin θ",
+            d: "কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>একটি চার্জিত কণার উপর চৌম্বক ক্ষেত্রের কারণে ক্রিয়াশীল বলের সাধারণ সূত্র হলো F = qvB sinθ। এখানে q হলো ইলেকট্রনের চার্জ, v হলো ইলেকট্রনের বেগ, B হলো চৌম্বক ক্ষেত্রের মান এবং θ হলো বেগ ও চৌম্বক ক্ষেত্রের মধ্যবর্তী কোণ। μ₀ (শূন্য স্থানের চৌম্বক প্রবেশ্যতা) বা E₀ (শূন্য স্থানের তড়িৎ প্রবেশ্যতা) এই সমীকরণে সরাসরি আসে না।</p>",
+        },
+        {
+          id: 12,
+          question:
+            "সুষম চৌম্বক ক্ষেত্রের দিকের সাথে সমকোণে গতিশীল কোনো বিন্দু চার্জের বেলায় কোনটি সত্য?",
+          options: {
+            a: "প্রযুক্ত চৌম্বক বল সর্বনিম্ন",
+            b: "চৌম্বক বল দ্বারা কৃত কাজ ধনাত্মক",
+            c: "চার্জের গতির দিক অপরিবর্তিত",
+            d: "চৌম্বক বল দ্বারা কৃত কাজ শূন্য",
+          },
+          correct: "d",
+          explanation:
+            "<p>একটি চার্জিত কণার উপর চৌম্বক বল F = q(v × B)। এই বল সর্বদা কণার গতির দিকের (v) সাথে লম্বভাবে কাজ করে। যখন বল গতির দিকের লম্ব হয়, তখন বল দ্বারা কৃত কাজ (W = F.d) শূন্য হয়, কারণ cos90° = 0। তাই, চৌম্বক বল গতিশীল চার্জের উপর কোনো কাজ করে না, এটি শুধু তার গতিপথ পরিবর্তন করে।</p>",
+        },
+        {
+          id: 13,
+          question:
+            "একটি সোজা চুম্বকীয় তারের চৌম্বক ভ্রামক যদি M হয়, তাহলে তারটিকে অর্ধবৃত্তাকারে বাঁকানো হলে তারটির চৌম্বক ভ্রামক কত হবে?",
+          options: {
+            a: "2M/π",
+            b: "Mπ",
+            c: "2M",
+            d: "2Mπ",
+          },
+          correct: "a",
+          explanation:
+            "<p>ধরি, সোজা তারের দৈর্ঘ্য L এবং মেরু শক্তি p। তাহলে চৌম্বক ভ্রামক M = pL। যখন তারটিকে অর্ধবৃত্তাকারে বাঁকানো হয়, তখন তারের দৈর্ঘ্য অর্ধবৃত্তের পরিধির সমান হয়, অর্থাৎ L = πr, যেখানে r হলো অর্ধবৃত্তের ব্যাসার্ধ। অর্ধবৃত্তের দুটি মেরুর মধ্যে দূরত্ব হলো 2r। নতুন চৌম্বক ভ্রামক M' = p(2r)। যেহেতু r = L/π, তাহলে M' = p(2L/π) = (2/π)pL = 2M/π।</p>",
+        },
+        {
+          id: 14,
+          question: "নিচের কোনটি একটি কুণ্ডলীর চৌম্বকভ্রামক নির্দেশ করে?",
+          options: {
+            a: "NILb",
+            b: "NIA",
+            c: "μ₀ / 4π",
+            d: "μ₀I / 4π",
+          },
+          correct: "b",
+          explanation:
+            "<p>একটি কুণ্ডলীর চৌম্বক ভ্রামক (Magnetic Dipole Moment) হলো এর তড়িৎ প্রবাহ, পাক সংখ্যা এবং ক্ষেত্রফলের গুণফল। গাণিতিকভাবে এটি μ = NIA দ্বারা প্রকাশ করা হয়, যেখানে N হলো কুণ্ডলীর পাক সংখ্যা, I হলো কুণ্ডলীর মধ্য দিয়ে প্রবাহিত তড়িৎ প্রবাহ এবং A হলো কুণ্ডলীর ক্ষেত্রফল। এটি কুণ্ডলীর চৌম্বক শক্তির একটি পরিমাপ।</p>",
+        },
+        {
+          id: 15,
+          question:
+            "একই দৈর্ঘ্যের দুটি তারের একটি বর্গাকার এবং অন্যটিকে বৃত্তাকার বাঁকানো হলো। ওদের মধ্যে একই প্রবাহমাত্রা পাঠানো হলে এদের চৌম্বক ভ্রামকের অনুপাত কত?",
+          options: {
+            a: "2 : π",
+            b: "π : 2",
+            c: "π : 4",
+            d: "8 : π",
+          },
+          correct: "c",
+          explanation:
+            "<p>ধরা যাক, তারের মোট দৈর্ঘ্য L।<br>বর্গাকার কুণ্ডলীর ক্ষেত্রে: প্রতিটি বাহুর দৈর্ঘ্য a = L/4। ক্ষেত্রফল A<sub>square</sub> = a² = (L/4)² = L²/16।<br>বৃত্তাকার কুণ্ডলীর ক্ষেত্রে: পরিধি 2πr = L, তাই ব্যাসার্ধ r = L/2π। ক্ষেত্রফল A<sub>circle</sub> = πr² = π(L/2π)² = πL²/4π² = L²/4π।<br>চৌম্বক ভ্রামক M = IA। যেহেতু I একই, তাই M ∝ A।<br>M<sub>square</sub> : M<sub>circle</sub> = A<sub>square</sub> : A<sub>circle</sub> = (L²/16) : (L²/4π) = 1/16 : 1/4π = 4π : 16 = π : 4।</p>",
+        },
+        {
+          id: 16,
+          question:
+            "কোনো চৌম্বকক্ষেত্রে একটি আধান গতিশীল হলে সেটি যে বল লাভ করে তার মান নিচের কোন বিষয়টির ওপর নির্ভর করে না?",
+          options: {
+            a: "আধানের পরিমাণ",
+            b: "আধানের বেগ",
+            c: "চৌম্বকক্ষেত্রের মান",
+            d: "আধানের প্রকৃতি",
+          },
+          correct: "d",
+          explanation:
+            "<p>চৌম্বক ক্ষেত্রে গতিশীল একটি আধানের উপর ক্রিয়াশীল বলের মান F = |q|vB sinθ। এখানে q হলো আধানের পরিমাণ, v হলো আধানের বেগ, B হলো চৌম্বক ক্ষেত্রের মান এবং θ হলো বেগ ও চৌম্বক ক্ষেত্রের মধ্যবর্তী কোণ। এই সূত্রে আধানের প্রকৃতি (যেমন: এটি ইলেকট্রন না প্রোটন) সরাসরি জড়িত নয়, শুধুমাত্র তার চার্জের পরিমাণ জড়িত।</p>",
+        },
+        {
+          id: 17,
+          question: "স্থির চার্জের উপর চৌম্বক বল-",
+          options: {
+            a: "শূন্য",
+            b: "অত্যন্ত বেশি",
+            c: "অত্যন্ত কম",
+            d: "কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>একটি চৌম্বক ক্ষেত্রে একটি চার্জিত কণার উপর ক্রিয়াশীল বলের সূত্র হলো F = qvB sinθ। এখানে v হলো চার্জের বেগ। যখন একটি চার্জ স্থির থাকে, তখন তার বেগ v = 0 হয়। সুতরাং, চৌম্বক বল F = q(0)B sinθ = 0 হবে। অর্থাৎ, স্থির চার্জের উপর কোনো চৌম্বক বল ক্রিয়া করে না।</p>",
+        },
+        {
+          id: 18,
+          question:
+            "একটি চুম্বকক্ষেত্র B-এর মধ্যে একটি চার্জ v বেগে চললে চার্জটির উপর চুম্বকক্ষেত্রের বল কোন ক্ষেত্রে শূন্য হবে?",
+          options: {
+            a: "v ও B-এর মধ্যবর্তী কোণ 90° হলে",
+            b: "v ও B-এর মধ্যে কোণ শূন্য বা 180° হলে",
+            c: "v ও B-এর মধ্যবর্তী কোণ শূন্য বা 180° ছাড়া অন্য যেকোনো মান হলে",
+            d: "কখনই শূন্য হবে না",
+          },
+          correct: "b",
+          explanation:
+            "<p>একটি চার্জিত কণার উপর চৌম্বক বলের সূত্র F = qvB sinθ। বলের মান শূন্য হবে যখন sinθ = 0 হয়। এটি তখনই ঘটে যখন θ = 0° (বেগ চৌম্বক ক্ষেত্রের সমান্তরাল) বা θ = 180° (বেগ চৌম্বক ক্ষেত্রের বিপরীত সমান্তরাল) হয়। এই ক্ষেত্রে, চার্জ চৌম্বক ক্ষেত্র বরাবর বা তার বিপরীত দিকে গতিশীল হয়, যার ফলে কোনো বল অনুভব করে না।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "কোনো স্থানে একই সাথে তড়িৎক্ষেত্র ও চৌম্বকক্ষেত্র বিদ্যমান থাকলে সেখানে একটি গতিশীল আধান যে বল লাভ করে তাকে কী বলে?",
+          options: {
+            a: "তড়িৎ বল",
+            b: "লরেঞ্জ বল",
+            c: "চৌম্বক বল",
+            d: "তড়িৎ চুম্বক বল",
+          },
+          correct: "b",
+          explanation:
+            "<p>কোনো স্থানে একই সাথে তড়িৎক্ষেত্র (E) এবং চৌম্বকক্ষেত্র (B) বিদ্যমান থাকলে, সেখানে একটি গতিশীল আধান (q) যে মোট বল অনুভব করে, তাকে লরেঞ্জ বল (Lorentz force) বলা হয়। লরেঞ্জ বল তড়িৎ বল (qE) এবং চৌম্বক বল (q(v × B)) এর ভেক্টর যোগফল। এটি তড়িৎচুম্বকত্বের একটি মৌলিক ধারণা।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "পরিমাণ আধান একটি চৌম্বকক্ষেত্র B এর সাথে সমান্তরালে V বেগে গতিশীল। উক্ত স্থানে একটি তড়িৎক্ষেত্র E থাকলে আধানের উপর ক্রিয়াশীল বল কত হবে?",
+          options: {
+            a: "q(E + v × B)",
+            b: "q(E × B)",
+            c: "qE",
+            d: "q(E + v.B)",
+          },
+          correct: "c",
+          explanation:
+            "<p>লরেঞ্জ বলের সূত্রানুযায়ী, আধানের উপর ক্রিয়াশীল মোট বল F = q(E + v × B)। যেহেতু আধানটি চৌম্বকক্ষেত্র B এর সাথে সমান্তরালে V বেগে গতিশীল, তাই v এবং B এর মধ্যবর্তী কোণ 0° হয়। ফলস্বরূপ, v × B = 0। সুতরাং, আধানের উপর ক্রিয়াশীল মোট বল হবে F = qE। অর্থাৎ, এক্ষেত্রে শুধুমাত্র তড়িৎ ক্ষেত্র দ্বারা বল ক্রিয়া করবে।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "চৌম্বকক্ষেত্রের দিকের সমান্তরালে গতিশীল কোনো আধানের ওপর চৌম্বক বলের মান-",
+          options: {
+            a: "1",
+            b: "0",
+            c: "-1",
+            d: "0.1",
+          },
+          correct: "b",
+          explanation:
+            "<p>একটি চার্জিত কণার উপর চৌম্বক বলের সূত্র F = qvB sinθ। যখন একটি আধান চৌম্বক ক্ষেত্রের দিকের সমান্তরালে গতিশীল হয়, তখন বেগ (v) এবং চৌম্বক ক্ষেত্র (B) এর মধ্যবর্তী কোণ θ = 0° হয়। sin(0°) = 0 হওয়ায়, চৌম্বক বল F = qvB (0) = 0 হয়। অর্থাৎ, সমান্তরাল গতিতে কোনো চৌম্বক বল ক্রিয়া করে না।</p>",
+        },
+        {
+          id: 22,
+          question:
+            "চৌম্বক ক্ষেত্রের দিক নির্ণয়ের জন্য কোন সূত্র ব্যবহার করা হয়?",
+          options: {
+            a: "ফ্যারাডের সূত্র",
+            b: "ফ্লেমিং এর ডান হস্ত সূত্র",
+            c: "ডান হস্তের বৃদ্ধাঙ্গুলি সূত্র",
+            d: "ফ্লেমিং এর বাম হস্ত সূত্র",
+          },
+          correct: "b",
+          explanation:
+            "<p>চৌম্বক ক্ষেত্রের দিক নির্ণয়ের জন্য সাধারণত ফ্লেমিং এর ডান হস্ত সূত্র (Fleming's Right-Hand Rule) এবং ডান হস্তের বৃদ্ধাঙ্গুলি সূত্র (Right-Hand Thumb Rule) ব্যবহার করা হয়। ফ্লেমিংয়ের ডান হস্ত সূত্র জেনারেটরের কার্যপ্রণালী ব্যাখ্যায় আবেশিত প্রবাহের দিক নির্ণয়ে ব্যবহৃত হয়। ডান হস্তের বৃদ্ধাঙ্গুলি সূত্র তড়িৎ প্রবাহের কারণে সৃষ্ট চৌম্বক ক্ষেত্রের দিক নির্ণয়ে ব্যবহৃত হয়। প্রশ্নটি 'চৌম্বক ক্ষেত্র' বলতে মূলত আবেশিত চৌম্বক ক্ষেত্র বা ক্ষেত্ররেখার দিক নির্দেশ করছে।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "চৌম্বক ক্ষেত্রে স্থাপিত একটি তড়িৎবাহী তারের উপর ক্রিয়াশীল বলের দিক নির্ভর করে-",
+          options: {
+            a: "তড়িৎ প্রবাহের দিকের উপর",
+            b: "চৌম্বকক্ষেত্রের দিকের উপর",
+            c: "তড়িৎ প্রবাহ ও চৌম্বক ক্ষেত্রের দিকের উপর",
+            d: "চৌম্বক ক্ষেত্র বা তড়িৎ প্রবাহের দিকের উপর নির্ভরশীল নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>চৌম্বক ক্ষেত্রে স্থাপিত একটি তড়িৎবাহী তারের উপর ক্রিয়াশীল বলের দিক ফ্লেমিংয়ের বাম হস্ত সূত্র দ্বারা নির্ধারিত হয়। এই সূত্র অনুযায়ী, বলের দিক নির্ভর করে তড়িৎ প্রবাহের দিক এবং চৌম্বক ক্ষেত্রের দিক উভয়ের উপর। বৃদ্ধাঙ্গুলি বলের দিক, তর্জনী চৌম্বক ক্ষেত্রের দিক এবং মধ্যমা তড়িৎ প্রবাহের দিক নির্দেশ করে।</p>",
+        },
+        {
+          id: 24,
+          question: "কোনটি চার্জিত বস্তুর ওপর ক্রিয়াশীল লরেঞ্জ বল?",
+          options: {
+            a: "F = qB + qv × E",
+            b: "F = qE + q(v × B)",
+            c: "F = qv + E × B",
+            d: "F = qvE + q × B",
+          },
+          correct: "b",
+          explanation:
+            "<p>লরেঞ্জ বল (Lorentz force) হলো একটি গতিশীল চার্জিত কণার উপর ক্রিয়াশীল মোট বল, যা তড়িৎ ক্ষেত্র এবং চৌম্বক ক্ষেত্র উভয় দ্বারা প্রভাবিত হয়। এর গাণিতিক সূত্র হলো F = qE + q(v × B)। এখানে qE হলো তড়িৎ ক্ষেত্র দ্বারা প্রযুক্ত বল এবং q(v × B) হলো চৌম্বক ক্ষেত্র দ্বারা প্রযুক্ত বল। এই দুইটি বলের ভেক্টর সমষ্টিই হলো লরেঞ্জ বল।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                    <label class="option" data-option="${option}">
+                    <div class="circle">${option}</div>
+                    <span class="option-text">${question.options[option]}</span>
+                    </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                             <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                             <div class="explanation-content">
+                                                                               <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                               ${question.explanation}
+                                                                             </div>
+                                                                           </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                        <p class="question-label">${
+                                                                          index +
+                                                                          1
+                                                                        }. ${
+            question.question
+          }</p>
+                                                                        <div class="options">
+                                                                          ${optionsHTML}
+                                                                        </div>
+                                                                        ${explanationHTML}
+                                                                      `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
